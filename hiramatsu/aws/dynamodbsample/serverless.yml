@@ -1,0 +1,80 @@
+service: dynamodbsample
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: python3.8
+  # https://www.serverless.com/framework/docs/deprecations/#AWS_API_GATEWAY_NAME_STARTING_WITH_SERVICE
+  apiGateway:
+    shouldStartNameWithService: true
+  stage: dev
+  region: ap-northeast-1
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+package:
+  exclude:
+    - node_modules
+functions:
+  hello:
+    handler: wsgi_handler.handler
+    layers:
+      - { Ref: PythonRequirementsLambdaLayer }
+    events:
+      - http: GET /
+      - http:
+          path: /{id}/{name}
+          method: ANY
+          integration: lambda-proxy
+      - http:
+          path: hello
+          method: POST
+          integration: lambda-proxy
+    environment:
+      TABLENAME: ${self:custom.const.TABLENAME}
+resources:
+  Resources:
+    DynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+        -
+          AttributeName: Id
+          AttributeType: S
+        -
+          AttributeName: Name
+          AttributeType: S
+       # キーの種類を指定（ハッシュorレンジキー）
+        KeySchema:
+          -
+            AttributeName: Id
+            KeyType: HASH
+          -
+            AttributeName: Name
+            KeyType: RANGE
+        # プロビジョニングするキャパシティーユニットの設定
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        # テーブル名の指定
+        TableName: ${self:custom.const.TABLENAME}
+        TimeToLiveSpecification:
+          AttributeName: ExpirationTime
+          Enabled: true
+plugins:
+  - serverless-python-requirements
+  - serverless-wsgi
+custom:
+  pythonRequirements:
+    layer: true
+  wsgi:
+    app: handler.app
+    packRequirements: false
+  # ユーザ定数定義
+  const:
+    TABLENAME: datatypeSample
+
