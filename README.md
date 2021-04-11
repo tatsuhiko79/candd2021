@@ -32,3 +32,10 @@
         /csharp
             /hello.cs
     ```
+
+## git push
+- gitBashで対象のリポジトリに移動し、以下コマンドを実行
+
+    `git config credential.helper store`
+
+- 初回のみUseNameとPasswordを尋ねられるので入力する
